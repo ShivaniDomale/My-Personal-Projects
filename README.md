@@ -6,6 +6,6 @@ Execute the WeatherMicroserviceApplication.java file
 An Tomcat server instance will be started at port: 8080.
 Access this server through your browser using localhost:8080.
 To use the API enter the following in the url:
-Location Name based: http://localhost:8080/pages/getWeather1/lat={lat}&lon={lon}
+http://localhost:8080/pages/getWeather1/lat={lat}&lon={lon}
 or
-Location Name based(JSON Output): http://localhost:8080/pages/getWeather 
+http://localhost:8080/pages/getWeather 

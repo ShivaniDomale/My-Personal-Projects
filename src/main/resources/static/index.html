@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Inventory</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #eef2f7;
+    color: #333;
+    text-align: center;
+}
+
+h1 {
+    color: #4CAF50;
+    margin-bottom: 20px;
+}
+
+.container {
+    max-width: 900px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.form-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.form-container input {
+    width: 80%;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+button {
+    padding: 10px 15px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    transition: 0.3s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#searchBar {
+    width: 60%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #4CAF50;
+    color: white;
+}
+
+td {
+    background-color: #f9f9f9;
+}
+
+tbody tr:hover td {
+    background-color: #f1f1f1;
+}
+</style>
+</head>
+<body>
+    <h1>Product Inventory</h1>
+    <div class="container">
+        <div class="form-container">
+            <h3>Add Product</h3>
+            <input type="text" id="name" placeholder="Product Name">
+            <input type="text" id="description" placeholder="Product Description">
+            <input type="number" id="price" placeholder="Price" step="0.01">
+            <input type="number" id="quantity" placeholder="Quantity" min="0">
+            <button onclick="addProduct()">Add Product</button>
+        </div>
+
+        <h3>Search Product</h3>
+        <input type="text" id="searchBar" placeholder="Search by name..." onkeyup="filterProducts()">
+
+        <h3>Product List</h3>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="productTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            loadProducts();
+        });
+
+        function loadProducts() {
+            $.get("/products/all", function(products) {
+                let rows = "";
+                products.forEach(product => {
+                    rows += `
+                        <tr>
+                            <td>${product.id}</td>
+                            <td><input type="text" value="${product.name}" id="name-${product.id}"></td>
+                            <td><input type="text" value="${product.description}" id="description-${product.id}"></td>
+                            <td><input type="number" value="${product.price}" id="price-${product.id}" step="0.01"></td>
+                            <td><input type="number" value="${product.quantity}" id="quantity-${product.id}" min="1"></td>
+                            <td>
+                                <button onclick="updateProduct(${product.id})">Update</button>
+                                <button onclick="deleteProduct(${product.id})" style="background-color: #ff5733;">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                $("#productTable").html(rows);
+            });
+        }
+
+        function addProduct() {
+            let name = $("#name").val();
+            let description = $("#description").val();
+            let price = $("#price").val();
+            let quantity = $("#quantity").val();
+
+            if (!name || !description || !price || !quantity) {
+                alert("Please fill all fields!");
+                return;
+            }
+
+            $.ajax({
+                url: "/products/add",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ name, description, price, quantity }),
+                success: function() {
+                    alert("Product added successfully!");
+                    $("#name, #description, #price, #quantity").val("");
+                    loadProducts();
+                }
+            });
+        }
+
+        function updateProduct(id) {
+            let name = $(`#name-${id}`).val();
+            let description = $(`#description-${id}`).val();
+            let price = $(`#price-${id}`).val();
+            let quantity = $(`#quantity-${id}`).val();
+
+            $.ajax({
+                url: `/products/${id}`,
+                type: "PUT",
+                contentType: "application/json",
+                data: JSON.stringify({ name, description, price, quantity }),
+                success: function() {
+                    alert("Product updated successfully!");
+                    loadProducts();
+                }
+            });
+        }
+
+        function deleteProduct(id) {
+            if (confirm("Are you sure you want to delete this product?")) {
+                $.ajax({
+                    url: `/products/${id}`,
+                    type: "DELETE",
+                    success: function() {
+                        alert("Product deleted successfully!");
+                        loadProducts();
+                    }
+                });
+            }
+        }
+
+        function filterProducts() {
+            let searchValue = $("#searchBar").val().toLowerCase();
+            $("tbody tr").each(function() {
+                let productName = $(this).find("input").first().val().toLowerCase();
+                $(this).toggle(productName.includes(searchValue));
+            });
+        }
+    </script>
+</body>
+</html>
